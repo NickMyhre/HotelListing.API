@@ -1,4 +1,7 @@
+using HotelListing.API.Configurations;
+using HotelListing.API.Contracts;
 using HotelListing.API.Data;
+using HotelListing.API.Repository;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
@@ -31,6 +34,13 @@ builder.Services.AddCors(options =>
 //use Serilog in application for logging purposes
 //ctx is builder context, lc is logger configuration
 builder.Host.UseSerilog((ctx, lc) => lc.WriteTo.Console().ReadFrom.Configuration(ctx.Configuration));
+
+//register configuration for automapper, allows the injection of automapper anywhere in the program
+builder.Services.AddAutoMapper(typeof(MapperConfig));
+
+//register repositories in program, associates abstract delaration with implementation of the abstraction
+builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+builder.Services.AddScoped<ICountriesRepository, CountriesRepository>();
 
 var app = builder.Build();
 
