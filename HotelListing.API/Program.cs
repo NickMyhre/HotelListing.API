@@ -41,6 +41,7 @@ builder.Services.AddAutoMapper(typeof(MapperConfig));
 //register repositories in program, associates abstract delaration with implementation of the abstraction
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICountriesRepository, CountriesRepository>();
+builder.Services.AddScoped<IHotelsRepository, HotelsRepository>();
 
 var app = builder.Build();
 
