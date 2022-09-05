@@ -2,8 +2,13 @@ using HotelListing.API.Configurations;
 using HotelListing.API.Contracts;
 using HotelListing.API.Data;
 using HotelListing.API.Repository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +21,14 @@ var connectionString = builder.Configuration.GetConnectionString("HotelListingDb
 builder.Services.AddDbContext<HotelListingDbContext>(options => {
     options.UseSqlServer(connectionString);
 });
+
+//add Authentication services
+builder.Services.AddIdentityCore<ApiUser>() // add authentication service with extended identity user that has username, password, phone num etc w/ encryption
+    .AddRoles<IdentityRole>()   //Add services to use roles in the program(check authorization)
+    .AddTokenProvider<DataProtectorTokenProvider<ApiUser>>("HotelListingApi") //jwt authentication using same name as provider name
+    .AddEntityFrameworkStores<HotelListingDbContext>() //Only use HotelListingDbContext data store(can also include database that authenticates users here)
+    .AddDefaultTokenProviders(); //allows more functionality to other token providers
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -42,7 +55,35 @@ builder.Services.AddAutoMapper(typeof(MapperConfig));
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<ICountriesRepository, CountriesRepository>();
 builder.Services.AddScoped<IHotelsRepository, HotelsRepository>();
+builder.Services.AddScoped<IAuthManager, AuthManager>();
 
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme; //Represents "Bearer" Auth
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;  
+}).AddJwtBearer(options =>
+{
+    //set configuration parameters for bearer token
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        //create symmetric key to validate token
+        ValidateIssuerSigningKey = true,
+        //Validate that token came from this API
+        ValidateIssuer = true,
+        //Validate entity that has the token
+        ValidateAudience = true,
+        //check lifetime
+        ValidateLifetime = true,
+        //Don't provide any leeway for differing times between computers/entities 
+        ClockSkew = TimeSpan.Zero,
+        //these values come from appsettings.json file--------------------------(should be moved to config file)
+        //Declare issuers
+        ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
+        //Declare Audience
+        ValidAudience = builder.Configuration["JwtSettings:Audience"],
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Key"]))
+    };
+});
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -57,6 +98,8 @@ app.UseHttpsRedirection();
 //use Cors policy with the name AllowAll
 app.UseCors("AllowAll");
 
+//include authentication in the program
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
