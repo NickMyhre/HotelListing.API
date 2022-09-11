@@ -1,5 +1,5 @@
-﻿using HotelListing.API.Contracts;
-using HotelListing.API.Models.Users;
+﻿using HotelListing.API.Core.Contracts;
+using HotelListing.API.Core.Models.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -11,10 +11,13 @@ namespace HotelListing.API.Controllers
     public class AccountController : ControllerBase
     {
         private readonly IAuthManager _authManager;
+        //logger injection to allow custom logging
+        private readonly ILogger<AccountController> _logger;
 
-        public AccountController(IAuthManager authManager)
+        public AccountController(IAuthManager authManager, ILogger<AccountController> logger)
         {
             this._authManager = authManager;
+            this._logger = logger;
         }
 
         // api/Account/register
@@ -25,29 +28,45 @@ namespace HotelListing.API.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         public async Task<ActionResult> Register([FromBody] ApiUserDto apiUserDto)
         {
-            var errors = await _authManager.Register(apiUserDto);
-
-            //if errors exist
-            if (errors.Any())
+            //////NOTE: Logging here is not necessary. Logging and exception handling is dealt with through the ExceptionMiddleware class./////
+            
+            //log if someone attempts to register
+            _logger.LogInformation($"Registration Attempt for {apiUserDto.Email}");
+            try
             {
-                //iterate through errors
-                foreach (var error in errors)
+                var errors = await _authManager.Register(apiUserDto);
+
+                //if errors exist
+                if (errors.Any())
                 {
-                    //add errors to model state
-                    //modelstate handles errors and model state (model being the ApiUseDto data type)
-                    //model state is an object that used to hold errors for bad requests
-                    ModelState.AddModelError(error.Code, error.Description);
+                    //iterate through errors
+                    foreach (var error in errors)
+                    {
+                        //add errors to model state
+                        //modelstate handles errors and model state (model being the ApiUseDto data type)
+                        //model state is an object that used to hold errors for bad requests
+                        ModelState.AddModelError(error.Code, error.Description);
+                    }
+                    //return bad request with model state that contains errors
+                    return BadRequest(ModelState);
                 }
-                //return bad request with model state that contains errors
-                return BadRequest(ModelState);
+                return Ok();
             }
-            return Ok();
+            catch (Exception ex)
+            {
+
+                //log error for Register Action and include email
+                _logger.LogError(ex, $"Something Went Wrong in the {nameof(Register)} - User Registration attempt for {apiUserDto.Email}");
+                //message returned to client
+                return Problem($"Something Went Wrong in the {nameof(Register)}. Please contact support", statusCode: 500);
+            }
+
         }
 
         // api/Account/admin
         [HttpPost]
         [Route("admin")]
-        [Authorize(Roles ="Administrator")]
+        [Authorize(Roles = "Administrator")]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -74,6 +93,8 @@ namespace HotelListing.API.Controllers
 
 
 
+
+
         // api/Account/Login
         [HttpPost]
         [Route("login")]
@@ -91,6 +112,7 @@ namespace HotelListing.API.Controllers
             //return ok response with token and user id if authenticated/authorized
             return Ok(authResponse);
         }
+
 
         // api/Account/Login
         [HttpPost]
@@ -110,6 +132,5 @@ namespace HotelListing.API.Controllers
             return Ok(authResponse);
         }
     }
-
 }
 
