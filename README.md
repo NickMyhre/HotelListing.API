@@ -5,7 +5,7 @@
 This is an application largely from the "Ultimate ASP.NET Core Web API Development Guide" course on Udemy from Trevoir Williams. There are some small differences between the two such as this repo has more DTO classes for granularity and a cleaner (in my opinion) naming scheme for novelty endpoints that are only there to demonstrate a specific feature. There are also a lot more comments in this repo due to me wanting to refer back to it later.
 
 
-What this application does is serve as a RESTful API that returns data on countries and the hotels contained within them. In order to run this repo on your machine locally simply download the repo and run the update-database command from the Nuget package manager console to import the database data and schemo into the local SQL server. 
+What this application does is serve as a RESTful API that returns data on countries and the hotels contained within them. In order to run this repo on your machine locally simply download the repo and run the update-database command from the Nuget package manager console to import the database data and schema into the local SQL server. 
 
 The database was created through code-first development using Entity Framework.
 
