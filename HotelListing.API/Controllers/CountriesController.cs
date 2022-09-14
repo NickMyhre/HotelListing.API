@@ -13,7 +13,6 @@ namespace HotelListing.API.Controllers
     [Route("api/v{version:apiVersion}/countries")]
     [ApiController]
     [ApiVersion("1.0", Deprecated = true)]
-    //[Authorize]
     public class CountriesController : ControllerBase
     {
         //inject Automapper into controller
@@ -30,7 +29,8 @@ namespace HotelListing.API.Controllers
         }
 
         // GET: api/Countries/GetAll
-        [HttpGet("GetAll")]
+        [HttpGet]
+        
         public async Task<ActionResult<IEnumerable<GetCountryDto>>> GetCountries()
         {
             //return all countries and map to dto
@@ -39,7 +39,7 @@ namespace HotelListing.API.Controllers
         }
 
         // GET: api/Countries/?StartIndex=0&pagesize=25&pagenumber=1
-        [HttpGet]
+        [HttpGet("getpagedresult")]
         public async Task<ActionResult<PagedResult<GetCountryDto>>> GetPagedCountries([FromQuery] QueryParameters queryParameters)
         {
             //return all countries using paging from Query parameter class and Paged Result class

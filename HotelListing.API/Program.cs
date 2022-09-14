@@ -169,7 +169,9 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    //hide schemas from user, (only used in Dev Environment atm currently but could be useful for other scenarios)
+    app.UseSwaggerUI(options =>
+        options.DefaultModelsExpandDepth(-1));
 }
 
 //use custom middleware into the request pipeline
